@@ -1,6 +1,8 @@
 const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
+const cors = require('cors'); // Import the cors package
+
 
 const app = express();
 app.use(bodyParser.json());
@@ -8,11 +10,28 @@ app.use(bodyParser.json());
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'Toyotaecho3+', // Change to your database password
+  password: '123123', // Change to your database password
   database: 'ecommerce', // Change to your database name
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
+});
+
+app.use(cors({
+  origin: 'http://localhost:3000', // Replace with your front-end's origin
+}));
+
+app.get('/products', (req, res) => {
+  // Query your MySQL database to retrieve product data here
+  pool.query('SELECT * FROM Product_Catalog', (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Error retrieving products');
+    } else {
+      res.setHeader('Content-Type', 'application/json');
+      res.json(results);
+    }
+  });
 });
 
 // Create a new shopping cart
