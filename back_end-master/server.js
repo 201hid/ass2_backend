@@ -1,28 +1,29 @@
 const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
-const cors = require('cors'); // Import the cors package
-
+const path = require('path');
+const cors = require('cors');
 
 const app = express();
+
 app.use(bodyParser.json());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+}));
 
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '123123', // Change to your database password
+  password: 'Toyotaecho3+', // Change to your database password
   database: 'ecommerce', // Change to your database name
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
 
-app.use(cors({
-  origin: 'http://localhost:3000', // Replace with your front-end's origin
-}));
-
 app.get('/products', (req, res) => {
-  // Query your MySQL database to retrieve product data here
   pool.query('SELECT * FROM Product_Catalog', (err, results) => {
     if (err) {
       console.error(err);
@@ -30,6 +31,24 @@ app.get('/products', (req, res) => {
     } else {
       res.setHeader('Content-Type', 'application/json');
       res.json(results);
+    }
+  });
+});
+
+app.get('/product/:productName', (req, res) => {
+  const productName = req.params.productName;
+  pool.query('SELECT * FROM Product_Catalog WHERE Product_Name = ?', [productName], (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Error retrieving product details');
+    } else {
+      if (results.length === 0) {
+        res.status(404).send('Product not found');
+      } else {
+        const product = results[0];
+        res.setHeader('Content-Type', 'application/json');
+        res.json(product);
+      }
     }
   });
 });
@@ -48,7 +67,6 @@ app.post('/Shopping_Cart', (req, res) => {
   });
 });
 
-// Get cart items for a specific shopping cart
 app.get('/Cart_Items/:cart_id', (req, res) => {
   const cartId = req.params.cart_id;
   pool.query('SELECT * FROM Cart_Items WHERE Cart_ID = ?', [cartId], (err, results) => {
@@ -58,23 +76,6 @@ app.get('/Cart_Items/:cart_id', (req, res) => {
     } else {
       res.setHeader('Content-Type', 'application/json');
       res.json(results);
-    }
-  });
-});
-
-// Add a new item to a shopping cart
-app.post('/Cart_Items/:cart_id', (req, res) => {
-  const cartId = req.params.cart_id;
-  const { product_id, quantity } = req.body;
-
-  // You can include additional logic here, such as checking product availability and updating cart total.
-  // For simplicity, this example just inserts a new cart item.
-  pool.query('INSERT INTO Cart_Items (Cart_ID, Product_ID, Quantity) VALUES (?, ?, ?)', [cartId, product_id, quantity], (err, results) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send('Error adding item to cart');
-    } else {
-      res.status(201).send('Item added to cart successfully');
     }
   });
 });
